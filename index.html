@@ -5,11 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>주역 점괘 생성기</title>
 
-<script src="./lineData.js"></script>
-<script>
-window.lineData = window.lineTexts;
-</script>
-  
 <style>
   :root{
     --bg:#0f1221;
@@ -632,7 +627,8 @@ const lineTexts = {
 
 function renderLineSection(base, values){
   const moves = movingIndexes(values);
-  const lines = lineTexts[base.number];
+  const lines = window.lineTexts?.[base.number] || lineTexts?.[base.number];
+  console.log("DEBUG", base.number, moves, window.lineTexts?.[base.number]);
   if (!lines || moves.length === 0) {
     el.lineSection.classList.add("hidden");
     el.lineCards.innerHTML = "";
