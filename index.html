@@ -79,6 +79,12 @@
   label{
     display:block; margin-bottom:6px; font-size:13px; color:#d8def7;
   }
+  .memo-guide{
+    margin:0 0 8px;
+    font-size:12px;
+    line-height:1.55;
+    color:var(--muted);
+  }
   select, textarea, input[type="text"]{
     width:100%;
     border-radius:12px;
@@ -89,7 +95,7 @@
     font-size:14px;
     outline:none;
   }
-  textarea{min-height:88px; resize:vertical}
+  textarea{min-height:160px; resize:vertical}
   .btn{
     appearance:none; border:none; cursor:pointer;
     padding:12px 14px; border-radius:12px; font-size:14px; font-weight:700;
@@ -228,8 +234,22 @@
         </div>
 
         <div class="field">
-          <label for="memo">상황 메모 (선택)</label>
-          <textarea id="memo" placeholder="예: 이직 제안을 받아서 옮길지 고민 중"></textarea>
+          <label for="memo">현재 상황 / 고민</label>
+          <p class="memo-guide">상황을 구체적으로 작성할수록 AI 해석의 정확도가 높아집니다.</p>
+          <textarea id="memo" placeholder="현재 상황을 가능한 한 구체적으로 작성하세요.
+
+1. 현재 상황
+예: 회사에서 이직 제안을 받았습니다.
+
+2. 고민되는 선택지
+예: 현재 회사에 남을지 / 새 회사로 옮길지
+
+3. 걱정되는 부분
+예: 새 회사의 안정성이 불확실합니다.
+
+4. 내가 원하는 방향
+예: 안정성보다 성장 가능성이 중요합니다.
+"></textarea>
         </div>
 
         <div class="row" style="margin-bottom:12px;">
@@ -429,7 +449,6 @@ const trigrams = [
 const trigramNameToIndex = Object.fromEntries(trigrams.map((t, i) => [t.name, i]));
 
 const hexMatrix = [
-  // lower: 건, 태, 리, 진, 손, 감, 간, 곤 / upper same order
   [
     ["1","乾","건","창조와 주도","스스로 길을 열어 가는 힘이 강할 때입니다."],
     ["43","夬","쾌","결단과 정리","머뭇거림을 끊고 핵심을 정리해야 할 때입니다."],
@@ -512,7 +531,6 @@ const hexMatrix = [
   ]
 ];
 
-// Build full hex array & maps
 const hexagrams = [];
 const patternToHex = {};
 for (let lower = 0; lower < 8; lower++) {
@@ -520,7 +538,7 @@ for (let lower = 0; lower < 8; lower++) {
     const item = hexMatrix[lower][upper];
     const lowerTri = trigrams[lower];
     const upperTri = trigrams[upper];
-    const pattern = lowerTri.code + upperTri.code; // bottom 3 + top 3
+    const pattern = lowerTri.code + upperTri.code;
     const hex = {
       number: item[0],
       hanja: item[1],
@@ -595,22 +613,15 @@ const el = {
   copySummaryBtn: document.getElementById("copySummaryBtn")
 };
 
-
-const lineLabelMap = {1:"初",2:"二",3:"三",4:"四",5:"五",6:"上"};
-
-
-
 function renderLineSection(base, values){
   const moves = movingIndexes(values);
-  const lines = window.lineTexts?.[base.number] || lineTexts?.[base.number];
-  console.log("DEBUG", base.number, moves, window.lineTexts?.[base.number]);
+  const lines = window.lineTexts?.[base.number];
   if (!lines || moves.length === 0) {
     el.lineSection.classList.add("hidden");
     el.lineCards.innerHTML = "";
     return;
   }
   const main = chooseMainMoving(moves);
-  const items = [];
   const unique = [];
   if (main) unique.push(main);
   moves.forEach(n => { if (!unique.includes(n)) unique.push(n); });
@@ -676,10 +687,7 @@ function chooseMainMoving(moves){
   if (moves.length === 1) return moves[0];
   if (moves.length === 2) return moves[0];
   if (moves.length === 3) return moves[1];
-  if (moves.length === 4) {
-    const un = [1,2,3,4,5,6].filter(n => !moves.includes(n));
-    return un[0];
-  }
+  if (moves.length === 4) return [1,2,3,4,5,6].filter(n => !moves.includes(n))[0];
   if (moves.length === 5) return [1,2,3,4,5,6].find(n => !moves.includes(n));
   return null;
 }
@@ -766,8 +774,6 @@ function buildSummaryText(state){
 function buildPrompt(state){
   const { values, base, changed, category, memo } = state;
   const moves = movingIndexes(values);
-
-  // 변효 효사 원문 섹션 생성 (lineData.js 활용)
   const lineTextsData = window.lineTexts?.[base.number];
   const main = chooseMainMoving(moves);
   let lineSection = "";
@@ -783,7 +789,6 @@ function buildPrompt(state){
     lineSection = `\n[변효 효사 원문]\n${lineItems}\n`;
   }
 
-  // 변효 유무에 따른 조건부 항목
   const item3 = moves.length === 0
     ? "3. 현재 상태가 안정적으로 유지되는 이유와 주의점"
     : "3. 변효 효사를 근거로 한 실제 변화 포인트";
@@ -820,7 +825,6 @@ ${item3}
 
 [출력 조건]
 - 모든 항목은 반드시 "지금 당장 할 수 있는 행동 1가지"로 마무리하세요.
-  예) ❌ "결단이 필요하다" → ✅ "이번 주 안에 X를 확인하거나 Y를 실행하라"
 - 효사 원문이 있는 경우, 단순 인용보다 현실 상황에 연결된 해석을 우선하세요.
 - 전통 해석 30% + 현실 적용 70% 비율로 작성하세요.
 - 한국어로 작성하세요.`;
