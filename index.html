@@ -379,7 +379,6 @@
         <textarea id="promptBox" class="prompt-box" placeholder="점괘를 생성하면 AI 질문용 프롬프트가 여기에 자동 생성됩니다."></textarea>
         <div class="row" style="margin-top:10px;">
           <button class="btn" id="copyPromptBtn" type="button">프롬프트 복사</button>
-          <button class="btn secondary" id="refreshPromptBtn" type="button">프롬프트 다시 생성</button>
         </div>
       </div>
     </div>
@@ -609,7 +608,6 @@ const el = {
   lineCards: document.getElementById("lineCards"),
   promptBox: document.getElementById("promptBox"),
   copyPromptBtn: document.getElementById("copyPromptBtn"),
-  refreshPromptBtn: document.getElementById("refreshPromptBtn"),
   copySummaryBtn: document.getElementById("copySummaryBtn")
 };
 
@@ -897,11 +895,6 @@ el.generateBtn.addEventListener("click", ()=>{
 
 el.manualApplyBtn.addEventListener("click", ()=>{
   renderResult(manualValues(), "직접 입력");
-});
-
-el.refreshPromptBtn.addEventListener("click", ()=>{
-  if(!latestState) return alert("먼저 점괘를 생성해 주세요.");
-  el.promptBox.value = buildPrompt(latestState);
 });
 
 async function copyText(text){
