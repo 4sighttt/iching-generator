@@ -766,22 +766,39 @@ function buildSummaryText(state){
 function buildPrompt(state){
   const { values, base, changed, category, memo } = state;
   const moves = movingIndexes(values);
-  const bits = valuesToBits(values).join("");
-  const changedBits = valuesToBits(changedValues(values)).join("");
-  return `다음 주역 점괘 결과를 바탕으로, 전통적 상징 해석과 현대적 상황 적용을 함께 고려해 자세히 해설해 주세요.
+
+  // 변효 효사 원문 섹션 생성 (lineData.js 활용)
+  const lineTextsData = window.lineTexts?.[base.number];
+  const main = chooseMainMoving(moves);
+  let lineSection = "";
+  if (lineTextsData && moves.length > 0) {
+    const unique = [];
+    if (main) unique.push(main);
+    moves.forEach(n => { if (!unique.includes(n)) unique.push(n); });
+    const lineItems = unique.filter(n => lineTextsData[n]).map((n, idx) => {
+      const item = lineTextsData[n];
+      const tag = idx === 0 ? "【핵심 효】" : "【참조 효】";
+      return `  ${tag} ${item.label}\n  원문: ${item.raw}\n  해석: ${item.kor}`;
+    }).join("\n");
+    lineSection = `\n[변효 효사 원문]\n${lineItems}\n`;
+  }
+
+  // 변효 유무에 따른 조건부 항목
+  const item3 = moves.length === 0
+    ? "3. 현재 상태가 안정적으로 유지되는 이유와 주의점"
+    : "3. 변효 효사를 근거로 한 실제 변화 포인트";
+
+  return `당신은 주역과 동양 철학에 정통하며, 현대인의 실생활 상황에 전통 상징을 연결하는 해설가입니다.
+다음 점괘 결과를 바탕으로 전통 해석과 현대적 적용을 함께 고려해 자세히 해설해 주세요.
 
 [기본 정보]
 - 상황 분류: ${scenarioMap[category]}
-- 상황 메모: ${memo ? memo : "없음"}
+- 상황 메모: ${memo ? memo : "없음 (괘의 일반적 맥락으로 해석)"}
 - 효 값(1효→6효): ${values.join(", ")}
-- 본괘: ${base.number}. ${base.hanja} (${base.nameKo})
-- 본괘 키워드: ${base.keyword}
-- 변효: ${moves.length ? moves.join(", ") + "효" : "없음"}
-- 변괘: ${changed.number}. ${changed.hanja} (${changed.nameKo})
-- 변괘 키워드: ${changed.keyword}
-- 본괘 비트: ${bits}
-- 변괘 비트: ${changedBits}
-
+- 본괘: ${base.number}. ${base.hanja} (${base.nameKo}) / 키워드: ${base.keyword}
+- 변효: ${moves.length ? moves.join(", ") + "효" : "없음 (본괘 중심 해석)"}
+- 변괘: ${changed.number}. ${changed.hanja} (${changed.nameKo}) / 키워드: ${changed.keyword}
+${lineSection}
 [사이트 기본 해석]
 - 본괘 요약: ${base.summary}
 - 변괘 요약: ${changed.summary}
@@ -795,13 +812,18 @@ function buildPrompt(state){
 [원하는 답변 형식]
 1. 본괘의 핵심 의미
 2. 변괘로 넘어가는 흐름
-3. 변효가 의미하는 실제 변화 포인트
+${item3}
 4. 지금 상황에서 가장 중요한 판단 기준
 5. 해도 되는 것 / 미루는 것이 좋은 것
 6. ${scenarioMap[category]} 관점의 구체적 조언
 7. 한 줄 요약
 
-가능하면 추상적인 말만 하지 말고, 실제 생활에서 적용 가능한 언어로 설명해 주세요.`;
+[출력 조건]
+- 모든 항목은 반드시 "지금 당장 할 수 있는 행동 1가지"로 마무리하세요.
+  예) ❌ "결단이 필요하다" → ✅ "이번 주 안에 X를 확인하거나 Y를 실행하라"
+- 효사 원문이 있는 경우, 단순 인용보다 현실 상황에 연결된 해석을 우선하세요.
+- 전통 해석 30% + 현실 적용 70% 비율로 작성하세요.
+- 한국어로 작성하세요.`;
 }
 
 function renderResult(values, sourceLabel="자동 생성"){
